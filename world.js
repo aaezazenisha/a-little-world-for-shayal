@@ -58,11 +58,11 @@ const glow=glowTexture();
 function textSprite(lines, color='#fff4df', size=3.5, subtitle=false) {
   const c=document.createElement('canvas');c.width=2048;c.height=768;
   const x=c.getContext('2d');x.textAlign='center';x.textBaseline='middle';
-  x.shadowColor='#382542';x.shadowBlur=8;x.fillStyle=color;
-  x.font=`${subtitle?'italic ':''}104px Georgia`;
+  x.shadowColor='#382542';x.shadowBlur=12;x.fillStyle=color;
+  x.font=`${subtitle?'italic ':''}130px Georgia`;
   lines.forEach((line,i)=>x.fillText(line,1024,384+(i-(lines.length-1)/2)*140,1900));
   const map=new THREE.CanvasTexture(c);map.colorSpace=THREE.SRGBColorSpace;
-  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map,transparent:true,depthWrite:false}));
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map,transparent:true,depthWrite:false,fog:false}));
   sprite.scale.set(size*2.666,size,1);world.add(sprite);return sprite;
 }
 function terrain() {
@@ -91,13 +91,19 @@ function terrain() {
   const mountainMat=material(stage===3?0x26374d:stage===1?0xb58caa:0x698880,{roughness:1});
   for(let i=0;i<35;i++) {
     const a=i/35*Math.PI*2,r=random(140,235),h=random(20,65);
-    const m=mesh(new THREE.ConeGeometry(random(25,55),h,7),mountainMat,Math.sin(a)*r,h/2-8,Math.cos(a)*r);
+    const mountainGeo=new THREE.ConeGeometry(random(25,55),h,24,9);
+    const vertices=mountainGeo.attributes.position;
+    for(let v=0;v<vertices.count;v++){const x=vertices.getX(v),y=vertices.getY(v),z=vertices.getZ(v);vertices.setY(v,y+Math.sin(x*.2+z*.17)*Math.cos(z*.12)*4);}
+    mountainGeo.computeVertexNormals();
+    const m=mesh(mountainGeo,mountainMat,Math.sin(a)*r,h/2-8,Math.cos(a)*r);
     m.scale.z=random(.7,1.5);
   }
 }
 function foliage() {
   const count=stage===3?1000:stage===2?16000:6500;
-  const geo=new THREE.ConeGeometry(.045,.65,3);geo.translate(0,.32,0);
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute([-.035,0,0,.035,0,0,-.025,.32,.025,.025,.32,.025,.055,.67,.08],3));
+  geo.setIndex([0,1,2,1,3,2,2,3,4]);geo.computeVertexNormals();
   const mat=material(stage===1?0xd2a9ba:stage===3?0x30515b:0x547e48,{side:THREE.DoubleSide});
   const grass=new THREE.InstancedMesh(geo,mat,count);
   const dummy=new THREE.Object3D(),col=new THREE.Color();
@@ -239,8 +245,11 @@ function atmosphere() {
   } else {
     const sun=mesh(new THREE.SphereGeometry(9,20,16),new THREE.MeshBasicMaterial({color:0xffe1b0}),-85,55,-200);
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glow,color:0xffd4a6,transparent:true,opacity:.5,depthWrite:false}));halo.position.copy(sun.position);halo.scale.set(70,70,1);world.add(halo);
-    const cloudMat=material(stage===1?0xffe1e6:0xe9e7db,{transparent:true,opacity:.6,depthWrite:false});
-    for(let i=0;i<25;i++){const m=sphere(random(5,10),cloudMat,random(-180,180),random(35,65),random(-220,-100),world,2,.25,1);}
+    const c=document.createElement('canvas');c.width=512;c.height=192;const cx=c.getContext('2d');
+    for(let i=0;i<24;i++){const x=random(90,420),y=random(75,120),r=random(35,75),gr=cx.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,'#ffffff4a');gr.addColorStop(.5,'#ffffff24');gr.addColorStop(1,'#ffffff00');cx.fillStyle=gr;cx.fillRect(0,0,512,192);}
+    const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
+    const cloudMat=new THREE.SpriteMaterial({map:tex,color:stage===1?0xffe1e6:0xfff4e4,transparent:true,opacity:.65,depthWrite:false});
+    for(let i=0;i<16;i++){const s=new THREE.Sprite(cloudMat);s.position.set(random(-180,180),random(35,65),random(-220,-100));s.scale.set(random(40,80),random(15,25),1);world.add(s);}
   }
 }
 function clearWorld() {
@@ -258,13 +267,13 @@ function build(next) {
   terrain();foliage();lanterns();atmosphere();
   camera.position.set(0,1.8,stage===0?18:17);yaw=0;pitch=0;auto=false;
   if(stage===0){gate=makeGate(-12);target.set(0,1.8,-8);}
-  if(stage===1){guide=bunny();floatingHearts();gate=makeGate(-39);target.set(0,1.8,-9);const s=textSprite(['I have to tell you','something.'],'#fff5ef',7,true);s.position.set(0,11,-47);}
-  if(stage===2){guide=flowerGuide();gate=makeGate(-39);target.set(0,1.8,-9);const s=textSprite(['You make me the happiest','person in the world.'],'#fff9e3',7,true);s.position.set(0,12,-47);}
+  if(stage===1){guide=bunny();floatingHearts();gate=makeGate(-39);target.set(0,1.8,-9);const s=textSprite(['I have to tell you','something.'],'#fff5ef',7,true);s.position.set(0,10,-29);}
+  if(stage===2){guide=flowerGuide();gate=makeGate(-39);target.set(0,1.8,-9);const s=textSprite(['You make me the happiest','person in the world.'],'#fff9e3',7,true);s.position.set(0,10,-29);}
   if(stage===3){target.set(0,1.8,-9);const s=textSprite(['I just want you','to know that…'],'#f8e9f3',8,true);s.position.set(0,17,-65);const pedestal=mesh(new THREE.CylinderGeometry(.65,.8,.45,32),material(0x687889,{metalness:.6}),0,.25,-13);const heart=sphere(.23,material(0xe3b6cf,{emissive:0xa56b95,emissiveIntensity:1.5}),0,1.25,-13);floating.push({mesh:heart,y:1.25,phase:0});}
   const names=['The threshold','The rosewater gardens','A thousand little happinesses','Where the stars listen'];
   const objectives=['Find the towering door. Your world is on the other side.','Follow the path. A little bunny has a secret.','Find the flower waiting in the meadow.','Walk to the glowing light. Ask me anything.'];
   const actions=['Open the door ↗','Next — follow the bunny →','Next — through the door →','what what what? ♡'];
-  $('chapter-num').textContent=`0${stage+1} / 04`;$('chapter-name').textContent=names[stage];$('objective').textContent=objectives[stage];$('action').textContent=actions[stage];$('location').textContent=names[stage].toUpperCase();
+  $('chapter-num').textContent=`0${stage+1} / 04`;$('chapter-name').textContent=names[stage];$('objective').textContent=objectives[stage];$('action').textContent=actions[stage];$('location').textContent=names[stage].toUpperCase();$('guide').hidden=false;$('guide').textContent='Take me there →';
 }
 async function tweenCamera(destination,duration=2600) {
   const start=camera.position.clone(),startYaw=yaw,startPitch=pitch,begin=performance.now();

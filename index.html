@@ -1,44 +1,9 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f7dce5">
-  <meta name="description" content="A little journey through a world made just for you.">
-  <title>A little world, just for you ♡</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
-</head>
-<body>
-  <main id="world" data-scene="0">
-    <header><span class="brand">a little world <i>♡</i></span><span class="dedication">made just for you</span></header>
-    <audio id="music" src="music.mp3" preload="metadata" loop></audio><button id="music-toggle" hidden class="music-toggle" aria-label="Play background music" aria-pressed="false">♫ Music</button><span id="music-status" class="sr-only" role="status"></span><div id="decor" aria-hidden="true"></div>
-    <canvas id="fireworks" aria-hidden="true"></canvas>
-    <section class="scene active" id="entrance" aria-labelledby="title-0">
-      <div class="copy"><p class="eyebrow">SOMETHING SWEET IS WAITING</p><h1 id="title-0" tabindex="-1">A little world,<br>just for <em>you.</em></h1><p>I made you a place to feel a little more loved.</p></div>
-      <button class="door entrance-door" data-go="1" aria-label="Open the door and enter your little world"><span class="arch-glow"></span><span class="door-leaf left"><span class="panel"></span><span class="knob"></span></span><span class="door-leaf right"><span class="panel"></span><span class="knob"></span></span><span class="door-heart">♡</span></button>
-      <p class="door-caption">tap the door to step inside <span>↗</span></p>
-    </section>
-    <section class="scene" id="pink" aria-labelledby="title-1" inert>
-      <div class="copy"><p class="eyebrow">01 / A TINY LITTLE SECRET</p><h1 id="title-1" tabindex="-1">I have to tell<br>you <em>something.</em></h1><p>Come a little closer. This is just for you.</p></div>
-      <div class="cloud cloud-one" aria-hidden="true"></div><div class="cloud cloud-two" aria-hidden="true"></div>
-      <div class="character bunny" aria-hidden="true"><div class="ear e1"></div><div class="ear e2"></div><div class="bunny-body"></div><div class="bunny-head"><span class="eyes">• &nbsp; •</span><span class="cheeks">● &nbsp; ●</span><span class="nose">ᴗ</span></div><span class="paw p1"></span><span class="paw p2"></span></div>
-      <button class="sign" data-go="2">Next <span>→</span></button><p class="character-caption">a tiny guide, a very big secret</p>
-    </section>
-    <section class="scene" id="meadow" aria-labelledby="title-2" inert>
-      <div class="copy"><p class="eyebrow">02 / MY FAVORITE FEELING</p><h1 id="title-2" tabindex="-1">You make me the<br><em>happiest person</em><br>in the world.</h1><p>Every ordinary day is prettier with you in it.</p></div>
-      <div class="hill back" aria-hidden="true"></div><div class="hill front" aria-hidden="true"></div><div id="flowers" aria-hidden="true"></div>
-      <div class="character flower-friend" aria-hidden="true"><span class="stem"></span><span class="leaf"></span><span class="petals">✿</span><span class="flower-face">• ᴗ •</span></div><button class="sign" data-go="3">Next <span>→</span></button><p class="character-caption">even the flowers agree ♡</p>
-    </section>
-    <section class="scene" id="night" aria-labelledby="title-3" inert>
-      <div class="moon" aria-hidden="true"></div><div class="copy"><p class="eyebrow">03 / UNDER ALL THESE STARS</p><h1 id="title-3" tabindex="-1">I just want you<br>to know <em>that...</em></h1><p>Some feelings are bigger than the whole sky.</p></div><div class="constellation" aria-hidden="true">✧ · ˚ &nbsp; ♡ &nbsp; ˚ · ✧</div><button class="pill reveal-button" id="reveal">what what what? <span>♡</span></button><p class="night-caption">go on. ask me.</p>
-    </section>
-    <section class="scene" id="finale" aria-labelledby="title-4" inert><div class="copy"><p class="eyebrow">MY FAVORITE PERSON. MY FAVORITE EVERYTHING.</p><h1 id="title-4" tabindex="-1">I LOVE YOU<br><em>SO MUCH</em><span class="shayal">SHAYAL</span><span class="final-heart">♡</span></h1><p>In every little moment. Under every sky.<br>Always, you.</p></div><button class="pill" id="replay">A little more magic? <span>↺</span></button><p class="night-caption">let’s do it all again</p></section>
-    <div id="portal" aria-hidden="true"><div class="portal-door"><div></div><div></div></div></div>
-    <footer><span id="footer-note">a small adventure with a big feeling</span><nav aria-label="Journey progress"><span class="dot current"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></nav><span class="footer-heart">with love, always ♡</span></footer>
-    <div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
-  </main>
-</body>
-</html>
-
-
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#172328"><title>Only You — a world for Shayal</title><link rel="stylesheet" href="world.css"></head><body>
+<canvas id="game" aria-label="Three-dimensional romantic adventure. Use the joystick or W A S D to walk. Drag to look."></canvas><div class="vignette"></div><div id="fade"></div>
+<header><a class="wordmark" href="./">ONLY YOU<span>AN EXPLORABLE LOVE LETTER</span></a><div><button id="sound" hidden aria-pressed="false">♫ Sound</button><button id="help" aria-label="Show controls">?</button></div></header>
+<main><section id="welcome"><div class="overline">A WORLD THAT EXISTS FOR ONE PERSON</div><h1>Some feelings<br>need a <em>whole world.</em></h1><p>So I made you one, Shayal.<br>Step inside. There’s something I want to tell you.</p><button id="start" class="primary" disabled>Building your world… ↗</button><div class="note">A FIRST-PERSON ADVENTURE · MADE WITH LOVE</div></section>
+<section id="hud" hidden><div class="chapter"><span id="chapter-num">01 / 04</span><span id="chapter-name">The beginning</span></div><div id="objective">Walk toward the door</div><div id="subtitle" aria-live="polite"></div><div class="interaction"><button id="action" class="primary">Open the door ↗</button><button id="guide" class="text-button">Take me there →</button></div><div id="crosshair">+</div><div class="walk-controls"><div id="joystick" aria-label="Movement joystick"><div id="stick"></div></div><span>MOVE</span></div><div class="look-hint">DRAG TO LOOK<br>↔</div></section>
+<section id="ending" hidden><p class="overline">EVERY WORLD. EVERY LIFETIME.</p><h2>I LOVE YOU<br><em>SO MUCH</em><span>SHAYAL</span></h2><p>If I could give you a whole universe,<br>it would still be a little smaller than this feeling.</p><button id="replay" class="primary">Explore it again ↺</button><button id="explore" class="text-button">Stay under the stars</button></section>
+<aside id="instructions" hidden><button id="close-help" aria-label="Close controls">×</button><h2>Your little adventure</h2><p><strong>Phone:</strong> left joystick to walk. Drag elsewhere to look.</p><p><strong>Computer:</strong> W A S D or arrow keys to walk. Drag to look. E to interact.</p><p>Follow the path to each guide. “Take me there” walks for you.</p><label><input type="checkbox" id="gentle"> Gentle motion</label><p><a href="classic.html">Open the illustrated version</a></p></aside>
+<section id="error" hidden><h2>A smaller world, just as much love.</h2><p>Your browser couldn’t open the 3D world.</p><a class="primary" href="classic.html">Open the illustrated journey →</a></section></main>
+<footer><span id="location">SOMEWHERE BETWEEN A DREAM & YOU</span><span>♡ &nbsp; FOR SHAYAL</span></footer><audio id="music" src="music.mp3" preload="metadata" loop></audio><script type="module" src="world.js"></script><script>setTimeout(()=>{if(!window.worldReady){document.getElementById('welcome').hidden=true;document.getElementById('error').hidden=false;}},20000);</script></body></html>
