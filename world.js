@@ -63,6 +63,7 @@ function textSprite(lines, color='#fff4df', size=3.5, subtitle=false) {
   lines.forEach((line,i)=>x.fillText(line,1024,384+(i-(lines.length-1)/2)*140,1900));
   const map=new THREE.CanvasTexture(c);map.colorSpace=THREE.SRGBColorSpace;
   const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map,transparent:true,depthWrite:false,fog:false}));
+  sprite.userData.skyMessage=true;
   sprite.scale.set(size*2.666,size,1);world.add(sprite);return sprite;
 }
 function terrain() {
@@ -233,7 +234,7 @@ function atmosphere() {
     colors.set([1,random(.7,1),random(.65,1)],i*3);
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(positions,3));g.setAttribute('color',new THREE.BufferAttribute(colors,3));
-  particles=new THREE.Points(g,new THREE.PointsMaterial({size:stage===3?.65:.14,map:glow,transparent:true,opacity:.85,vertexColors:true,depthWrite:false,blending:THREE.AdditiveBlending}));world.add(particles);
+  particles=new THREE.Points(g,new THREE.PointsMaterial({size:stage===3?1.35:.14,map:glow,transparent:true,opacity:1,vertexColors:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:stage!==3,toneMapped:false}));world.add(particles);
   if(stage===3) {
     const moon=mesh(new THREE.SphereGeometry(8,28,20),new THREE.MeshBasicMaterial({color:0xffe6be}),-70,75,-180);
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glow,color:0xb5cfff,transparent:true,opacity:.3,blending:THREE.AdditiveBlending,depthWrite:false}));halo.position.copy(moon.position);halo.scale.set(50,50,1);world.add(halo);
@@ -269,7 +270,7 @@ function build(next) {
   if(stage===0){gate=makeGate(-12);target.set(0,1.8,-8);}
   if(stage===1){guide=bunny();floatingHearts();gate=makeGate(-39);target.set(0,1.8,-9);const s=textSprite(['I have to tell you','something.'],'#fff5ef',7,true);s.position.set(0,10,-29);}
   if(stage===2){guide=flowerGuide();gate=makeGate(-39);target.set(0,1.8,-9);const s=textSprite(['You make me the happiest','person in the world.'],'#fff9e3',7,true);s.position.set(0,10,-29);}
-  if(stage===3){target.set(0,1.8,-9);const s=textSprite(['I just want you','to know that…'],'#f8e9f3',8,true);s.position.set(0,17,-65);const pedestal=mesh(new THREE.CylinderGeometry(.65,.8,.45,32),material(0x687889,{metalness:.6}),0,.25,-13);const heart=sphere(.23,material(0xe3b6cf,{emissive:0xa56b95,emissiveIntensity:1.5}),0,1.25,-13);floating.push({mesh:heart,y:1.25,phase:0});}
+  if(stage===3){target.set(0,1.8,-9);const s=textSprite(['I just want you','to know that…'],'#f8e9f3',18,true);s.position.set(0,22,-65);const pedestal=mesh(new THREE.CylinderGeometry(.65,.8,.45,32),material(0x687889,{metalness:.6}),0,.25,-13);const heart=sphere(.23,material(0xe3b6cf,{emissive:0xa56b95,emissiveIntensity:1.5}),0,1.25,-13);floating.push({mesh:heart,y:1.25,phase:0});}
   const names=['The threshold','The rosewater gardens','A thousand little happinesses','Where the stars listen'];
   const objectives=['Find the towering door. Your world is on the other side.','Follow the path. A little bunny has a secret.','Find the flower waiting in the meadow.','Walk to the glowing light. Ask me anything.'];
   const actions=['Open the door ↗','Next — follow the bunny →','Next — through the door →','what what what? ♡'];
@@ -303,7 +304,8 @@ function reveal() {
   music.play().then(()=>{$('sound').textContent='♫ Pause';$('sound').setAttribute('aria-pressed','true');}).catch(()=>{$('sound').textContent='♫ Play song';});
   $('sound').hidden=false;$('ending').hidden=false;$('hud').hidden=true;
   pitch=.16;fireworksUntil=elapsed+25;burstClock=0;
-  const s=textSprite(['I LOVE YOU SO MUCH','SHAYAL'],'#ffe2c1',12);s.position.set(0,28,-100);
+  world.traverse(o=>{if(o.userData.skyMessage)o.visible=false;});
+  const s=textSprite(['I LOVE YOU SO MUCH','SHAYAL'],'#ffe2c1',25);s.position.set(0,28,-100);s.visible=false;s.userData.finalMessage=true;
 }
 function firework() {
   const n=110,positions=new Float32Array(n*3),velocities=[];
@@ -341,8 +343,8 @@ $('sound').addEventListener('click',()=>{if(music.paused)music.play().catch(()=>
 music.addEventListener('play',()=>{$('sound').textContent='♫ Pause';$('sound').setAttribute('aria-pressed','true');});
 music.addEventListener('pause',()=>{$('sound').textContent='♫ Play';$('sound').setAttribute('aria-pressed','false');});
 $('replay').addEventListener('click',async()=>{if(busy)return;busy=true;$('fade').classList.add('on');await sleep(650);music.pause();music.currentTime=85;$('sound').hidden=true;final=false;$('ending').hidden=true;build(0);$('hud').hidden=false;fireworksUntil=0;busy=false;$('fade').classList.remove('on');});
-$('explore').addEventListener('click',()=>{$('ending').hidden=true;$('hud').hidden=false;$('action').textContent='See your love letter ♡';$('guide').hidden=true;$('objective').textContent='Stay a little. This whole sky is yours.';});
-$('action').addEventListener('click',()=>{if(final)$('ending').hidden=false;});
+$('explore').addEventListener('click',()=>{$('ending').hidden=true;$('hud').hidden=false;$('action').textContent='See your love letter ♡';$('guide').hidden=true;$('objective').textContent='Stay a little. This whole sky is yours.';world.traverse(o=>{if(o.userData.finalMessage)o.visible=true;});});
+$('action').addEventListener('click',()=>{if(final){$('ending').hidden=false;world.traverse(o=>{if(o.userData.finalMessage)o.visible=false;});}});
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();$('error').hidden=false;});
 
