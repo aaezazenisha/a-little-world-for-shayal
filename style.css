@@ -4,3 +4,4 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.scene{transform:none}#portal{display:none!important}}
 .scene.zoom-through{transform:scale(3.5);opacity:0;transform-origin:50% 72%;transition:transform .7s ease-in,opacity .7s}
 .music-toggle{position:absolute;top:74px;right:max(6%,env(safe-area-inset-right));z-index:25;min-height:44px;padding:8px 14px;border:1px solid currentColor;border-radius:30px;background:transparent;color:inherit;font-size:11px}.shayal{display:block;font-size:.66em;letter-spacing:.12em;margin-top:12px}#finale .final-heart{font-size:30px;margin-top:12px}@media(max-height:740px){#finale .copy{margin-top:115px}#finale h1{font-size:48px}}
+#world{color:var(--ink)}
