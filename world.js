@@ -345,7 +345,7 @@ function useActivity() {
     a.label='Your flowers are blooming ✿';toast('A whole circle of flowers, because you make everything bloom.');
   } else if(a.kind==='lantern') {
     if(a.uses>=6){toast('Six little wishes are already on their way to the stars. ♡');return;}
-    spawnLantern(a.object.position.x,1.7,a.object.position.z);a.uses++;toast(`Lantern ${a.uses}/6 released. Somewhere, a star is keeping your wish.`);
+    spawnLantern(camera.position.x-Math.sin(yaw)*3,camera.position.y+1.25,camera.position.z-Math.cos(yaw)*3);a.uses++;toast(`Lantern ${a.uses}/6 released. Somewhere, a star is keeping your wish.`);
   }
 }
 function updateJournal() {
