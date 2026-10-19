@@ -20,11 +20,25 @@ renderer.toneMappingExposure = 1.15;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, .1, 550);
 camera.rotation.order = 'YXZ';
+let maxUnlocked = 0;
 let stage = 0, started = false, busy = false, auto = false, final = false;
 let yaw = 0, pitch = 0, joy = {x:0,y:0}, pointer = null, joyPointer = null;
 let elapsed = 0, clock = new THREE.Clock(), burstClock = 0, fireworksUntil = 0;
 let gate, guide, world = new THREE.Group(), water, particles, skyStars;
 let floating = [], flames = [], bursts = [], lights = [];
+let activities = [], butterflies = [], skyLanterns = [], fountainDrops, meteor;
+let nearActivity = null, toastTimer, activitySerial = 0;
+const collected = new Set();
+const noteTexts = [
+  'If I could choose a thousand beginnings, every one would lead to you.',
+  'My favorite place is wherever I get to be with you.',
+  'You turn the smallest moments into memories I want to keep.',
+  'There is a little more magic in the world because you are in it.',
+  'Your happiness will always be one of my favorite things.',
+  'Some days are ordinary. Loving you never is.',
+  'Out of all these stars, you would still be the one I wished for.',
+  'This adventure ends, but my love for you keeps going. Always, Shayal.'
+];
 scene.add(world);
 const target = new THREE.Vector3(0,1.8,-14);
 const keys = new Set();
@@ -226,6 +240,139 @@ function floatingHearts() {
     m.scale.setScalar(random(.15,.6));floating.push({mesh:m,y:m.position.y,phase:random(0,6.28)});
   }
 }
+function toast(message) {
+  $('activity-toast').textContent=message;$('activity-toast').hidden=false;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('activity-toast').hidden=true,7000);
+}
+function activity(kind,label,object,data={}) {
+  activities.push({kind,label,object,...data});return object;
+}
+function gardenBench(x,z) {
+  const g=new THREE.Group();g.position.set(x,0,z);world.add(g);
+  const wood=material(0x94745d),iron=material(0x445958,{metalness:.5});
+  for(let i=0;i<4;i++)box(2,.09,.16,wood,0,.6,(i-1.5)*.19,g);
+  for(let i=0;i<3;i++)box(2,.13,.08,wood,0,.95+i*.17,-.38,g);
+  for(const s of [-1,1]){box(.09,.6,.65,iron,s*.78,.3,0,g);box(.08,1.3,.08,iron,s*.78,.65,-.4,g);}
+}
+function noteObjects() {
+  for(let i=0;i<2;i++) {
+    const id=stage*2+i;if(collected.has(id))continue;
+    const g=new THREE.Group();g.position.set(i===0?0:(stage%2?-5:5),1.05,i===0?8:-2);world.add(g);
+    const paper=material(0xffedd6,{roughness:.5}),rose=material(0xc47b98,{metalness:.3});
+    box(.65,.43,.035,paper,0,0,0,g);
+    const flap=mesh(new THREE.ConeGeometry(.21,.18,3),rose,0,.04,.03,g);flap.rotation.z=Math.PI;flap.scale.z=.12;
+    sphere(.065,material(0xf0bcd2,{emissive:0xd67b9f,emissiveIntensity:1}),0,-.055,.06,g);
+    const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glow,color:0xffd7ad,transparent:true,opacity:.28,depthWrite:false}));halo.scale.set(1.6,1.6,1);g.add(halo);
+    floating.push({mesh:g,y:1.05,phase:i});activity('note','Read this love note ♡',g,{id});
+  }
+}
+function wishingFountain() {
+  const g=new THREE.Group();g.position.set(-6,0,-2);world.add(g);
+  const stone=material(0xd3b7b5,{roughness:.45}),gold=material(0xc9a47c,{metalness:.7,roughness:.3});
+  mesh(new THREE.CylinderGeometry(1.8,2,.35,40),stone,0,.16,0,g);
+  mesh(new THREE.TorusGeometry(1.65,.18,8,40),gold,0,.5,0,g).rotation.x=Math.PI/2;
+  mesh(new THREE.CylinderGeometry(1.52,1.52,.04,40),material(0xdbaac7,{metalness:.7,roughness:.15}),0,.45,0,g);
+  mesh(new THREE.CylinderGeometry(.12,.2,1.1,12),stone,0,.9,0,g);
+  mesh(new THREE.SphereGeometry(.28,16,12),gold,0,1.55,0,g);
+  const points=[];for(let i=0;i<160;i++)points.push(0,0,0);
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
+  fountainDrops=new THREE.Points(geo,new THREE.PointsMaterial({color:0xffecd9,size:.08,map:glow,transparent:true,opacity:.8,depthWrite:false}));g.add(fountainDrops);
+  activity('wish','Make a wish ✧',g,{uses:0});
+}
+function chimes() {
+  const g=new THREE.Group();g.position.set(5,0,1);world.add(g);
+  const bronze=material(0xc8b18b,{metalness:.75,roughness:.25});
+  box(.12,3.7,.12,material(0x716c5b),0,1.85,0,g);box(1.3,.1,.14,bronze,-.45,3.65,0,g);
+  for(let i=0;i<5;i++)mesh(new THREE.CylinderGeometry(.045,.045,.6+i*.1,8),bronze,-.95+i*.24,2.8-i*.05,0,g);
+  activity('chime','Ring the garden chimes ♪',g);
+}
+function butterflyTrail() {
+  const colors=[0xe6b7d5,0xf3d49e,0xb5d1ec];
+  for(let i=0;i<18;i++) {
+    const g=new THREE.Group();g.position.set(random(-9,9),random(.8,2.7),random(-12,16));world.add(g);
+    const mat=material(colors[i%3],{side:THREE.DoubleSide,roughness:.4,emissive:colors[i%3],emissiveIntensity:.15});
+    const wings=[];
+    for(const s of [-1,1]){const pivot=new THREE.Group();g.add(pivot);const w=mesh(new THREE.SphereGeometry(.13,7,5),mat,s*.12,0,0,pivot);w.scale.set(1,.12,1.5);wings.push(pivot);}
+    butterflies.push({group:g,wings,base:g.position.clone(),phase:random(0,6.28)});
+  }
+}
+function bloomGarden() {
+  const g=new THREE.Group();g.position.set(-5,0,-2);world.add(g);
+  const ring=mesh(new THREE.TorusGeometry(.65,.045,6,32),material(0xc7b87c,{emissive:0xb59a4a,emissiveIntensity:.5}),0,.12,0,g);ring.rotation.x=Math.PI/2;
+  sphere(.19,material(0xeec4d7,{emissive:0xcc819f,emissiveIntensity:.6}),0,.55,0,g);
+  activity('bloom','Wake up the flower garden ✿',g,{uses:0});
+}
+function lanternStand() {
+  const g=new THREE.Group();g.position.set(5,0,-2);world.add(g);
+  box(1.6,.1,.65,material(0x6b6872),0,.9,0,g);
+  for(const s of [-1,1])box(.1,.9,.1,material(0x8a7c78),s*.65,.45,0,g);
+  for(let i=0;i<3;i++)mesh(new THREE.CylinderGeometry(.15,.13,.35,8),material(0xffd0a0,{emissive:0xffb36c,emissiveIntensity:.8}),-.45+i*.45,1.13,0,g);
+  activity('lantern','Release a sky lantern ✧',g,{uses:0});
+  // Distant lanterns are already rising above the lake.
+  for(let i=0;i<15;i++)spawnLantern(random(-30,30),random(8,25),random(-80,-25),false);
+}
+function spawnLantern(x,y,z,released=true) {
+  const g=new THREE.Group();g.position.set(x,y,z);world.add(g);
+  const shell=material(0xffd1a4,{emissive:0xffaa60,emissiveIntensity:1.2,transparent:true,opacity:.9});
+  const paper=mesh(new THREE.CylinderGeometry(.22,.18,.5,8,1,true),shell,0,0,0,g);
+  box(.32,.025,.32,material(0xe0aa74),0,-.26,0,g);
+  const light=new THREE.Sprite(new THREE.SpriteMaterial({map:glow,color:0xffb266,transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false}));light.scale.set(1.4,1.4,1);g.add(light);
+  skyLanterns.push({group:g,startY:y,phase:random(0,6.28),released});
+}
+let audioContext;
+function ringChimes() {
+  try {
+    audioContext ||= new (window.AudioContext||window.webkitAudioContext)();audioContext.resume();
+    [523.25,659.25,783.99,1046.5].forEach((f,i)=>{const osc=audioContext.createOscillator(),gain=audioContext.createGain(),t=audioContext.currentTime+i*.17;osc.type='sine';osc.frequency.value=f;gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.07,t+.015);gain.gain.exponentialRampToValueAtTime(.001,t+1.5);osc.connect(gain);gain.connect(audioContext.destination);osc.start(t);osc.stop(t+1.6);});
+  } catch { /* The visual interaction still works when audio is unavailable. */ }
+}
+function useActivity() {
+  const a=nearActivity;if(!a||busy||!$('journal').hidden)return;
+  if(a.kind==='note') {
+    collected.add(a.id);a.object.visible=false;toast(`Love note ${collected.size}/8: ${noteTexts[a.id]}`);updateJournal();
+    if(collected.size===8)toast('All eight notes found. Every path in this world leads back to you, Shayal. ♡');
+  } else if(a.kind==='wish') {
+    if(a.uses>=3){toast('Three wishes for us, held safely by the fountain. ♡');return;}
+    const wishes=['More sunsets together. More ordinary days made beautiful.','A thousand little adventures, with you beside me.','A lifetime of finding new reasons to love you.'];
+    toast(`A wish for us: ${wishes[a.uses%3]}`);a.uses++;
+    for(let i=0;i<5;i++){const m=sphere(.065,material(0xffd7ab,{emissive:0xffbc85,emissiveIntensity:1}),a.object.position.x+random(-1,1),random(1.5,3),a.object.position.z+random(-1,1));floating.push({mesh:m,y:m.position.y,phase:i});}
+    if(a.uses>=3)a.label='Three wishes made ♡';
+  } else if(a.kind==='chime') {ringChimes();toast('A little melody, just for you. ♪');}
+  else if(a.kind==='bloom') {
+    if(a.uses){toast('You made this little garden bloom. Just by being here.');return;}a.uses++;
+    const x=a.object.position.x,z=a.object.position.z;
+    for(let i=0;i<24;i++){const angle=i/24*Math.PI*2,r=1+(i%3)*.5,px=x+Math.sin(angle)*r,pz=z+Math.cos(angle)*r;mesh(new THREE.CylinderGeometry(.018,.025,.55,4),material(0x69874e),px,.25,pz);for(let j=0;j<5;j++){const p=j/5*Math.PI*2;sphere(.12,material(i%2?0xf0bdd4:0xffe6a5),px+Math.sin(p)*.13,.55,pz+Math.cos(p)*.13,world,1,.3,1);}sphere(.07,material(0xe2b361),px,.56,pz);}
+    a.label='Your flowers are blooming ✿';toast('A whole circle of flowers, because you make everything bloom.');
+  } else if(a.kind==='lantern') {
+    if(a.uses>=6){toast('Six little wishes are already on their way to the stars. ♡');return;}
+    spawnLantern(a.object.position.x,1.7,a.object.position.z);a.uses++;toast(`Lantern ${a.uses}/6 released. Somewhere, a star is keeping your wish.`);
+  }
+}
+function updateJournal() {
+  $('journal-open').textContent=`♡ ${collected.size} / 8`;
+  $('journal-open').setAttribute('aria-label',`Love notes journal. ${collected.size} of 8 notes found.`);
+  const list=$('journal-list');list.replaceChildren();
+  for(let i=0;i<8;i++){const item=document.createElement('li');item.textContent=collected.has(i)?noteTexts[i]:`Note ${i+1} — waiting in ${['the entrance garden','the rosewater gardens','the flower meadow','the night world'][Math.floor(i/2)]}`;if(!collected.has(i))item.className='unfound';list.append(item);}
+  [...$('travel-stage').options].forEach((option,i)=>option.disabled=i>maxUnlocked);
+  $('travel-stage').value=String(stage);
+}
+function openJournal() {
+  if(busy)return;
+  auto=false;keys.clear();resetJoy();$('journal').hidden=false;
+  for(const id of ['hud','welcome','ending'])$(id).inert=true;
+  $('journal-close').focus();
+}
+function closeJournal() {
+  $('journal').hidden=true;for(const id of ['hud','welcome','ending'])$(id).inert=false;$('journal-open').focus();
+}
+function extras() {
+  noteObjects();gardenBench(-5,10);gardenBench(6,-9);
+  if(stage===0)chimes();
+  if(stage===1)wishingFountain();
+  if(stage===1||stage===2)butterflyTrail();
+  if(stage===2)bloomGarden();
+  if(stage===3){lanternStand();const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(8,2,0)]);meteor=new THREE.Line(geo,new THREE.LineBasicMaterial({color:0xc9dfff,transparent:true,opacity:0}));meteor.position.set(50,50,-130);world.add(meteor);}
+}
 function atmosphere() {
   const n=stage===3?2100:260,positions=new Float32Array(n*3),colors=new Float32Array(n*3);
   for(let i=0;i<n;i++) {
@@ -257,15 +404,16 @@ function clearWorld() {
   const geometries=new Set(),textures=new Set(),mats=new Set();
   world.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material){for(const m of Array.isArray(o.material)?o.material:[o.material]){if(m.map&&m.map!==glow)textures.add(m.map);if(!Object.values(materials).includes(m))mats.add(m);}}});
   geometries.forEach(g=>g.dispose());textures.forEach(t=>t.dispose());mats.forEach(m=>m.dispose());
-  scene.remove(world);world=new THREE.Group();scene.add(world);floating=[];flames=[];bursts=[];water=null;guide=null;gate=null;
+  scene.remove(world);world=new THREE.Group();scene.add(world);floating=[];flames=[];bursts=[];water=null;guide=null;gate=null;activities=[];butterflies=[];skyLanterns=[];fountainDrops=null;meteor=null;nearActivity=null;
   lights.forEach(l=>scene.remove(l));lights=[];
 }
 function build(next) {
-  clearWorld();stage=next;
+  clearWorld();stage=next;maxUnlocked=Math.max(maxUnlocked,next);updateJournal();
   const p=palette[stage];scene.background=new THREE.Color(p.sky);scene.fog=new THREE.FogExp2(p.fog,stage===3?.004:.006);
   const hemi=new THREE.HemisphereLight(stage===3?0xadc8ff:0xffe8d6,p.ground,stage===3?1.5:2.2);scene.add(hemi);lights.push(hemi);
   const sun=new THREE.DirectionalLight(p.sun,stage===3?1.8:3.8);sun.position.set(-35,45,25);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-23;sun.shadow.camera.right=23;sun.shadow.camera.top=23;sun.shadow.camera.bottom=-23;sun.shadow.bias=-.001;scene.add(sun);lights.push(sun);
-  terrain();foliage();lanterns();atmosphere();
+  terrain();foliage();lanterns();atmosphere();extras();
+  $('activity-button').hidden=true;$('activity-toast').hidden=true;clearTimeout(toastTimer);$('subtitle').textContent='';$('subtitle').classList.remove('visible');
   camera.position.set(0,1.8,stage===0?18:17);yaw=0;pitch=0;auto=false;
   if(stage===0){gate=makeGate(-12);target.set(0,1.8,-8);}
   if(stage===1){guide=bunny();floatingHearts();gate=makeGate(-39);target.set(0,1.8,-9);const s=textSprite(['I have to tell you','something.'],'#fff5ef',7,true);s.position.set(0,10,-29);}
@@ -274,7 +422,7 @@ function build(next) {
   const names=['The threshold','The rosewater gardens','A thousand little happinesses','Where the stars listen'];
   const objectives=['Find the towering door. Your world is on the other side.','Follow the path. A little bunny has a secret.','Find the flower waiting in the meadow.','Walk to the glowing light. Ask me anything.'];
   const actions=['Open the door ↗','Next — follow the bunny →','Next — through the door →','what what what? ♡'];
-  $('chapter-num').textContent=`0${stage+1} / 04`;$('chapter-name').textContent=names[stage];$('objective').textContent=objectives[stage];$('action').textContent=actions[stage];$('location').textContent=names[stage].toUpperCase();$('guide').hidden=false;$('guide').textContent='Take me there →';
+  $('chapter-num').textContent=`0${stage+1} / 04`;$('chapter-name').textContent=names[stage];$('objective').textContent=objectives[stage];$('action').textContent=actions[stage];$('location').textContent=names[stage].toUpperCase();
 }
 async function tweenCamera(destination,duration=2600) {
   const start=camera.position.clone(),startYaw=yaw,startPitch=pitch,begin=performance.now();
@@ -289,7 +437,7 @@ async function openGate() {
 }
 async function action() {
   if(!started||busy||final)return;
-  if(camera.position.distanceTo(target)>8){auto=true;$('objective').textContent='Following the path… drag to look around.';return;}
+  if(camera.position.distanceTo(target)>8){toast(stage===0?'Walk along the glowing path to the door.':stage===3?'Walk along the path toward the glowing light.':'Walk along the path to your little guide.');return;}
   busy=true;auto=false;
   if(stage===3){reveal();busy=false;return;}
   $('action').disabled=true;
@@ -328,13 +476,29 @@ canvas.addEventListener('pointerdown',e=>{if(!started||busy)return;pointer={id:e
 canvas.addEventListener('pointermove',e=>{if(!pointer||pointer.id!==e.pointerId||busy)return;yaw-=(e.clientX-pointer.x)*.003;pitch-= (e.clientY-pointer.y)*.0025;pitch=THREE.MathUtils.clamp(pitch,-.65,.65);pointer.x=e.clientX;pointer.y=e.clientY;});
 canvas.addEventListener('pointerup',e=>{if(pointer&&Math.hypot(e.clientX-pointer.ox,e.clientY-pointer.oy)<9&&!final){ray.setFromCamera(new THREE.Vector2(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1),camera);const objects=guide?[guide]:gate?[gate]:[];if(ray.intersectObjects(objects,true).length)action();}pointer=null;});
 canvas.addEventListener('pointercancel',()=>{pointer=null;});
-addEventListener('keydown',e=>{if(document.activeElement.tagName==='INPUT'||!$('instructions').hidden)return;const key=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e'].includes(key))e.preventDefault();keys.add(key);if(key==='e'&&!e.repeat)action();});
+addEventListener('keydown',e=>{if(!$('journal').hidden){if(e.key==='Escape'){closeJournal();e.preventDefault();}return;}if(['INPUT','SELECT'].includes(document.activeElement.tagName)||!$('instructions').hidden)return;const key=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e'].includes(key))e.preventDefault();keys.add(key);if(key==='e'&&!e.repeat){if(nearActivity)useActivity();else action();}});
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 addEventListener('blur',()=>{keys.clear();resetJoy();pointer=null;});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();resetJoy();clock.getDelta();}});
 $('start').addEventListener('click',()=>{started=true;$('welcome').hidden=true;$('hud').hidden=false;});
 $('action').addEventListener('click',action);
-$('guide').addEventListener('click',()=>{if(!busy){auto=!auto;$('guide').textContent=auto?'Stop walking ·':'Take me there →';}});
+$('activity-button').addEventListener('click',useActivity);
+$('journal-open').addEventListener('click',openJournal);
+$('journal-close').addEventListener('click',closeJournal);
+$('journal-travel').addEventListener('click',async()=>{
+  const next=Number($('travel-stage').value);if(busy||next>maxUnlocked)return;
+  closeJournal();busy=true;$('fade').classList.add('on');await sleep(gentle?80:650);
+  music.pause();$('sound').hidden=true;final=false;fireworksUntil=0;started=true;
+  $('welcome').hidden=true;$('ending').hidden=true;$('hud').hidden=false;build(next);
+  $('fade').classList.remove('on');busy=false;
+});
+$('journal').addEventListener('keydown',e=>{
+  if(e.key!=='Tab')return;
+  const items=[...$('journal').querySelectorAll('button,select')],first=items[0],last=items.at(-1);
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+});
+
 $('help').addEventListener('click',()=>{$('instructions').hidden=!$('instructions').hidden;keys.clear();resetJoy();auto=false;});
 $('close-help').addEventListener('click',()=>{$('instructions').hidden=true;});
 $('gentle').addEventListener('change',e=>{gentle=e.target.checked;});
@@ -342,8 +506,8 @@ reduceQuery.addEventListener('change',e=>{gentle=e.matches;$('gentle').checked=g
 $('sound').addEventListener('click',()=>{if(music.paused)music.play().catch(()=>{$('sound').textContent='Tap to retry music';});else music.pause();});
 music.addEventListener('play',()=>{$('sound').textContent='♫ Pause';$('sound').setAttribute('aria-pressed','true');});
 music.addEventListener('pause',()=>{$('sound').textContent='♫ Play';$('sound').setAttribute('aria-pressed','false');});
-$('replay').addEventListener('click',async()=>{if(busy)return;busy=true;$('fade').classList.add('on');await sleep(650);music.pause();music.currentTime=85;$('sound').hidden=true;final=false;$('ending').hidden=true;build(0);$('hud').hidden=false;fireworksUntil=0;busy=false;$('fade').classList.remove('on');});
-$('explore').addEventListener('click',()=>{$('ending').hidden=true;$('hud').hidden=false;$('action').textContent='See your love letter ♡';$('guide').hidden=true;$('objective').textContent='Stay a little. This whole sky is yours.';world.traverse(o=>{if(o.userData.finalMessage)o.visible=true;});});
+$('replay').addEventListener('click',async()=>{if(busy)return;busy=true;$('fade').classList.add('on');await sleep(650);music.pause();music.currentTime=85;$('sound').hidden=true;final=false;collected.clear();maxUnlocked=0;$('ending').hidden=true;build(0);$('hud').hidden=false;fireworksUntil=0;busy=false;$('fade').classList.remove('on');});
+$('explore').addEventListener('click',()=>{$('ending').hidden=true;$('hud').hidden=false;$('action').textContent='See your love letter ♡';$('objective').textContent='Stay a little. This whole sky is yours.';world.traverse(o=>{if(o.userData.finalMessage)o.visible=true;});});
 $('action').addEventListener('click',()=>{if(final){$('ending').hidden=false;world.traverse(o=>{if(o.userData.finalMessage)o.visible=false;});}});
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();$('error').hidden=false;});
@@ -356,11 +520,10 @@ function animate() {
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.04);elapsed+=dt;
   if(document.hidden)return;
-  if(started&&!busy&&$('instructions').hidden && (!final||$('ending').hidden)) {
+  if(started&&!busy&&$('instructions').hidden&&$('journal').hidden && (!final||$('ending').hidden)) {
     let x=joy.x+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
     let z=joy.y+(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0);
-    if(auto){const delta=target.clone().sub(camera.position);delta.y=0;if(delta.length()<1){auto=false;$('guide').textContent='Take me there →';$('objective').textContent='You’re here. Tap the button to continue.';}else {delta.normalize().multiplyScalar(dt*5);camera.position.add(delta);yaw*=1-dt*2;pitch*=1-dt*2;}}
-    else if(x||z){const length=Math.max(1,Math.hypot(x,z));x/=length;z/=length;camera.position.x+=(x*Math.cos(yaw)+z*Math.sin(yaw))*dt*5;camera.position.z+=(-x*Math.sin(yaw)+z*Math.cos(yaw))*dt*5;}
+    if(x||z){const length=Math.max(1,Math.hypot(x,z));x/=length;z/=length;camera.position.x+=(x*Math.cos(yaw)+z*Math.sin(yaw))*dt*5;camera.position.z+=(-x*Math.sin(yaw)+z*Math.cos(yaw))*dt*5;}
     camera.position.x=THREE.MathUtils.clamp(camera.position.x,-38,38);camera.position.z=THREE.MathUtils.clamp(camera.position.z,stage===0?-8:stage===3?-27:-17,35);
     const edge=THREE.MathUtils.smoothstep(Math.abs(camera.position.x),5,40);
     const groundY=edge*(Math.sin(camera.position.x*.035+camera.position.z*.016)*2.7+Math.cos(camera.position.z*.045)*2.5);
@@ -371,8 +534,19 @@ function animate() {
   if(gate){const d=gate.userData;d.leaves[0].rotation.y=THREE.MathUtils.lerp(d.leaves[0].rotation.y,-d.open*1.65,dt*2);d.leaves[1].rotation.y=THREE.MathUtils.lerp(d.leaves[1].rotation.y,d.open*1.65,dt*2);}
   if(!gentle){for(const f of floating){f.mesh.position.y=f.y+Math.sin(elapsed*.8+f.phase)*.18;f.mesh.rotation.y=Math.sin(elapsed*.3+f.phase)*.25;}flames.forEach((m,i)=>m.scale.setScalar(1+Math.sin(elapsed*3+i)*.08));if(particles&&stage!==3)particles.rotation.y=Math.sin(elapsed*.05)*.05;}
   if(water&&!gentle){const p=water.geometry.attributes.position;for(let i=0;i<p.count;i++)p.setY(i,Math.sin(p.getX(i)*.08+elapsed*.6)*.08+Math.cos(p.getZ(i)*.08+elapsed*.4)*.06);p.needsUpdate=true;}
+  if(started&&!busy&&$('journal').hidden&&$('instructions').hidden&&(!final||$('ending').hidden)) {
+    let nearest=null,distance=3.1;
+    for(const a of activities){if(!a.object.visible)continue;const d=Math.hypot(camera.position.x-a.object.position.x,camera.position.z-a.object.position.z);if(d<distance){nearest=a;distance=d;}}
+    nearActivity=nearest;$('activity-button').hidden=!nearest;if(nearest)$('activity-button').textContent=nearest.label;
+  } else {$('activity-button').hidden=true;nearActivity=null;}
+  if(fountainDrops){const p=fountainDrops.geometry.attributes.position;for(let i=0;i<p.count;i++){const t=gentle?(i/p.count):((elapsed*.45+i/p.count)%1),a=i*2.399;p.setXYZ(i,Math.cos(a)*t*1.4,1.6+Math.sin(t*Math.PI)*1.4-t*1.2,Math.sin(a)*t*1.4);}p.needsUpdate=true;}
+  if(!gentle)for(const b of butterflies){b.group.position.set(b.base.x+Math.sin(elapsed*.5+b.phase)*.6,b.base.y+Math.sin(elapsed*1.3+b.phase)*.25,b.base.z+Math.cos(elapsed*.4+b.phase)*.5);b.group.rotation.y=elapsed*.2+b.phase;b.wings[0].rotation.z=Math.sin(elapsed*10+b.phase)*.65;b.wings[1].rotation.z=-Math.sin(elapsed*10+b.phase)*.65;}
+  for(const l of skyLanterns){if(!gentle){l.group.position.y+=dt*(l.released?.65:.15);l.group.position.x+=Math.sin(elapsed*.3+l.phase)*dt*.1;}if(l.group.position.y>48)l.group.position.y=l.startY;}
+  if(meteor){const cycle=elapsed%13;if(!gentle&&cycle<1.4){meteor.material.opacity=Math.sin(cycle/1.4*Math.PI);meteor.position.set(65-cycle*65,55-cycle*15,-125);}else meteor.material.opacity=0;}
   if(final&&elapsed<fireworksUntil&&!gentle){burstClock-=dt;if(burstClock<0){firework();burstClock=.65;}}
   for(let i=bursts.length-1;i>=0;i--){const b=bursts[i];b.life-=dt*.34;const pos=b.points.geometry.attributes.position;for(let j=0;j<b.velocities.length;j++){const v=b.velocities[j];v.y-=dt*2.2;pos.setXYZ(j,pos.getX(j)+v.x*dt,pos.getY(j)+v.y*dt,pos.getZ(j)+v.z*dt);}pos.needsUpdate=true;b.points.material.opacity=Math.max(0,b.life);if(b.life<=0){world.remove(b.points);b.points.geometry.dispose();b.points.material.dispose();bursts.splice(i,1);}}
   renderer.render(scene,camera);
 }
 animate();
+
+

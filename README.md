@@ -9,8 +9,8 @@ Live site: https://aaezazenisha.github.io/a-little-world-for-shayal/
 - On a phone, use the left joystick to walk and drag elsewhere to look around.
 - On a computer, use W A S D or arrow keys to walk, and drag to look. Press E to interact.
 - Follow the illuminated stone path to the door, bunny, flower, and final glowing light.
-- Press the main button when close to a guide. If you are farther away, it walks toward the guide first; tap again when you arrive.
-- “Take me there” provides automatic walking. Tap again to stop, or move the joystick.
+- Walk close to a guide, then press the main button. If you are too far away, a hint points you along the path.
+- Movement is fully manual. Use the joystick or W A S D to explore. No automatic-travel buttons.
 - The ? button explains controls and offers Gentle motion. Device Reduce Motion preferences are respected.
 - “what what what?” starts the supplied song at 1:25 and reveals “I LOVE YOU SO MUCH SHAYAL” with 3D fireworks.
 - Replay pauses and resets the audio. “Stay under the stars” lets you explore after the reveal.
@@ -33,3 +33,10 @@ The published HTTPS link is the easiest preview. JavaScript modules should be se
 To publish a copy: upload the listed files to the root of a GitHub repository. Under Settings → Pages, choose Deploy from a branch, main, /(root), Save. Keep the music alongside index.html. GitHub Pages is public.
 
 Official GitHub guide: https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+
+## Explore and play
+
+Find two glowing love notes in each world, eight in total. Walk within a few steps and press Read this love note, or E. The heart counter opens a journal where you can reread the notes and revisit any world already discovered. Notes stay collected while revisiting; replay starts a fresh hunt.
+
+In the entrance garden, ring the wind chimes. In the pink world, make three wishes at the fountain. In the meadow, wake up a circle of flowers and watch the butterflies. In the night world, release up to six sky lanterns and watch for shooting stars. Benches and distant lanterns add to the scenery. Activities are optional and do not block the main journey.
+
